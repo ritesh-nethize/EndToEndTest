@@ -19,11 +19,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # - name: Clone Producer Repo
-      #   run: git clone https://github.com/ritesh-nethize/ProducerService.git ProducerService
+      - name: Clone Producer Repo
+        run: git clone https://github.com/ritesh-nethize/ProducerService.git ProducerService
 
-      # - name: Clone Consumer Repo
-      #   run: git clone https://github.com/ritesh-nethize/ConsumerService.git ConsumerService
+      - name: Clone Consumer Repo
+        run: git clone https://github.com/ritesh-nethize/ConsumerService.git ConsumerService
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
@@ -44,14 +44,18 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # - name: Restore Dependencies
-      #   run: dotnet restore
-
+      
       - name: Build Solution
         run: dotnet build --no-restore --configuration Release --no-restore
 
       - name: Start Kafka and SQL Server
         run: docker-compose -f docker-compose.yml up -d
+
+      - name: Run Producer
+        run: dotnet run --project ProducerService/ProducerService.csproj &
+      
+      - name: Run Consumer
+        run: dotnet run --project ConsumerService/ConsumerService.csproj &
 
       - name: Wait for services to be ready
         run: sleep 20
