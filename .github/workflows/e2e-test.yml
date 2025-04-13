@@ -30,8 +30,8 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # - name: Restore dependencies
-      #   run: dotnet restore EndToEndTest/EndToEndTest.sln
+      - name: Restore dependencies
+        run: dotnet restore EndToEndTest/EndToEndTest.sln
 
       - name: Install Docker Compose
         run: |
