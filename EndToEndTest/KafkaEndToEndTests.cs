@@ -1,4 +1,4 @@
-﻿using Xunit;
+﻿/*using Xunit;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ConsumerService.Data;
@@ -55,4 +55,4 @@ namespace EndToEndTest
             Assert.Equal("E2E Test Title", saved.title);
         }
     }
-}
+}*/

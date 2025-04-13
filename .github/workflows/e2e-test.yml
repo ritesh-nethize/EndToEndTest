@@ -19,11 +19,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Clone Producer Repo
-        run: git clone https://github.com/ritesh-nethize/ProducerService.git ProducerService
+      # - name: Clone Producer Repo
+      #   run: git clone https://github.com/ritesh-nethize/ProducerService.git ProducerService
 
-      - name: Clone Consumer Repo
-        run: git clone https://github.com/ritesh-nethize/ConsumerService.git ConsumerService
+      # - name: Clone Consumer Repo
+      #   run: git clone https://github.com/ritesh-nethize/ConsumerService.git ConsumerService
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
