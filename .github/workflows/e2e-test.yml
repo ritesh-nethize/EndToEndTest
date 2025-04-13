@@ -45,8 +45,8 @@ jobs:
       - name: Run E2E Tests
         run: dotnet test E2ETests/E2ETests.csproj --configuration Release --logger "trx;LogFileName=test_results.trx"
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-results
-          path: '**/TestResults/*.trx'
+      # - name: Upload Test Results
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: test-results
+      #     path: '**/TestResults/*.trx'
