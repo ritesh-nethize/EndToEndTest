@@ -59,10 +59,10 @@ jobs:
           ls -la ./ConsumerService
 
       - name: Run Producer
-        run: dotnet run --project ./ProducerService/ProducerService.csproj &
+        run: dotnet run --project ./ProducerService/ProducerService/ProducerService.csproj &
       
       - name: Run Consumer
-        run: dotnet run --project ./ConsumerService/ConsumerService.csproj &
+        run: dotnet run --project ./ConsumerService/ConsumerService/ConsumerService.csproj &
 
       - name: Wait for services to be ready
         run: sleep 20
