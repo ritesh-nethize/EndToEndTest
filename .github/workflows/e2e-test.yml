@@ -57,7 +57,7 @@ jobs:
         run: sleep 20
 
       - name: Run E2E Tests
-        run: dotnet test E2ETests/E2ETests.csproj --configuration Release --logger "trx;LogFileName=test_results.trx"
+        run: dotnet test E2ETests.csproj --configuration Release --logger "trx;LogFileName=test_results.trx"
 
       # - name: Upload Test Results
       #   uses: actions/upload-artifact@v2
