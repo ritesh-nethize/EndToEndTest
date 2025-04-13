@@ -21,13 +21,13 @@ jobs:
     - name: Clone Producer Repo
       uses: actions/checkout@v3
       with:
-        repository: your-user/producer-service
+        repository: ritesh-nethize/ProducerService
         path: Producer
 
     - name: Clone Consumer Repo
       uses: actions/checkout@v3
       with:
-        repository: your-user/consumer-service
+        repository: ritesh-nethize/ConsumerService
         path: Consumer
 
     - name: Set up .NET
