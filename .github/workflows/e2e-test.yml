@@ -1,57 +1,52 @@
-name: E2E Tests
+name: E2E Test Pipeline
 
-#working
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
-  build-and-test:
+  e2e-test:
     runs-on: ubuntu-latest
+
     services:
       docker:
-        image: docker:24.0.2
+        image: docker:latest
         options: --privileged
 
     steps:
-    - name: Checkout e2e-tests repo
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Clone Producer Repo
-      uses: actions/checkout@v3
-      with:
-        repository: ritesh-nethize/ProducerService
-        path: Producer
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose version
 
-    - name: Clone Consumer Repo
-      uses: actions/checkout@v3
-      with:
-        repository: ritesh-nethize/ConsumerService
-        path: Consumer
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
 
-    - name: Set up .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+      - name: Restore Dependencies
+        run: dotnet restore
 
-    - name: Start dependencies
-      run: docker-compose up -d
+      - name: Build Solution
+        run: dotnet build --no-restore --configuration Release
 
-    - name: Build Producer & Consumer
-      run: |
-        dotnet build Producer/Producer.csproj --no-restore
-        dotnet build Consumer/Consumer.csproj --no-restore
+      - name: Start Kafka and SQL Server
+        run: docker-compose -f docker-compose.yml up -d
 
-    - name: Run Producer
-      run: dotnet run --project Producer/Producer.csproj &
-   
-    - name: Run Consumer
-      run: dotnet run --project Consumer/Consumer.csproj &
+      - name: Wait for services to be ready
+        run: sleep 20
 
-    - name: Wait for services
-      run: sleep 20
+      - name: Run E2E Tests
+        run: dotnet test E2ETests/E2ETests.csproj --configuration Release --logger "trx;LogFileName=test_results.trx"
 
-    - name: Run E2E Tests
-      run: dotnet test E2ETests/E2ETests.csproj
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
