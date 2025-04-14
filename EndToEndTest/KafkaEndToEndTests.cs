@@ -1,58 +1,92 @@
-﻿/*using Xunit;
+﻿using Xunit;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ConsumerService.Data;
 using ConsumerService.Models;
-using System.Linq;
-using System;
+using ProducerService.Models;
+using ProducerService.Services;
+using ConsumerService.Services;
+using Microsoft.Extensions.DependencyInjection;
 using System.Threading;
-using Confluent.Kafka;
-
 
 namespace EndToEndTest
 {
     public class KafkaEndToEndTests
     {
-        private readonly string _connectionString = "Server=localhost;Database=PostDb;Trusted_Connection=True;TrustServerCertificate=True;";
+        private const string ConnectionString = "Server=localhost;Database=PostDb;Trusted_Connection=True;TrustServerCertificate=True;";
+        private readonly IKafkaProducer _kafkaProducer;
+        private readonly IKafkaConsumer _kafkaConsumer;
+
+        public KafkaEndToEndTests()
+        {
+            // Setup DI for IKafkaProducer and IKafkaConsumer
+            var services = new ServiceCollection();
+            services.AddSingleton<IKafkaProducer, KafkaProducer>(); 
+            services.AddSingleton<IKafkaConsumer, KafkaConsumer>();
+
+            var provider = services.BuildServiceProvider();
+            _kafkaProducer = provider.GetRequiredService<IKafkaProducer>();
+            _kafkaConsumer = provider.GetRequiredService<IKafkaConsumer>();
+        }
 
         [Fact]
-        public async Task Producer_To_Kafka_To_Consumer_Writes_To_Database()
+        public async Task KafkaProducer_Publishes_Post_And_Consumer_Writes_To_Db()
         {
-            // Arrange
-            using var db = new PostDbContext(new DbContextOptionsBuilder<PostDbContext>()
-                .UseSqlServer(_connectionString)
-                .Options);
+            try
+            {
+                // Arrange
+                var post = new ProducerService.Models.Post
+                {
+                    id = 777,
+                    userId = 999,
+                    title = "Reused KafkaProducer",
+                    body = "Post from real KafkaProducer"
+                };
 
-            // Clear DB to start fresh
+                await ClearDatabaseAsync();
+
+                // Act
+                await _kafkaProducer.ProduceAsync(post); 
+                var cts = new CancellationTokenSource();
+                var consumeTask = _kafkaConsumer.StartConsumingAsync(cts.Token);
+
+                // Let consumer process the message
+                await Task.Delay(5000);
+
+                // Cancel the consumer task after processing
+                cts.Cancel();
+                await consumeTask; // Ensure consumer task is completed
+
+                // Assert
+                ConsumerService.Models.Post saved = await GetPostByIdAsync(post.id);
+                Assert.NotNull(saved);
+                Assert.Equal(post.title, saved.title);
+            }
+            catch (Exception ex)
+            {
+                // Log exception if necessary
+                Assert.True(false, ex.Message);
+            }
+        }
+
+        private async Task ClearDatabaseAsync()
+        {
+            using var db = GetDbContext();
             db.Posts.RemoveRange(db.Posts);
             await db.SaveChangesAsync();
+        }
 
-            // Act
-            var testPost = new Post
-            {
-                id = 99,
-                userId = 10,
-                title = "E2E Test Title",
-                body = "This is an E2E body"
-            };
+        private async Task<ConsumerService.Models.Post?> GetPostByIdAsync(int id)
+        {
+            using var db = GetDbContext();
+            return await db.Posts.FirstOrDefaultAsync(p => p.id == id);
+        }
 
-            var kafkaConfig = new Confluent.Kafka.ProducerConfig { BootstrapServers = "localhost:9092" };
-
-            using var producer = new Confluent.Kafka.ProducerBuilder<Null, string>(kafkaConfig).Build();
-            var json = System.Text.Json.JsonSerializer.Serialize(testPost);
-
-            await producer.ProduceAsync("sample-topic", new Confluent.Kafka.Message<Null, string> { Value = json });
-
-            // Flush to make sure it’s sent
-            producer.Flush(TimeSpan.FromSeconds(2));
-
-            // Wait for ConsumerService to consume and save
-            await Task.Delay(5000); 
-
-            // Assert
-            var saved = db.Posts.FirstOrDefault(p => p.id == 99);
-            Assert.NotNull(saved);
-            Assert.Equal("E2E Test Title", saved.title);
+        private PostDbContext GetDbContext()
+        {
+            return new PostDbContext(new DbContextOptionsBuilder<PostDbContext>()
+                .UseSqlServer(ConnectionString)
+                .Options);
         }
     }
-}*/
+}
